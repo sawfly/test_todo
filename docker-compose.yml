@@ -4,10 +4,10 @@ services:
         build:
             context: .test_todo/application
             args:
-                - PATH_TO_PROJECT=/var/www.test_todo.app
+                - PATH_TO_PROJECT=/var/www/test_todo.app
         container_name: testtodo.app
         volumes:
-          - ./application:/var/www.test_todo.app
+          - ./application:/var/www/test_todo.app
         tty: true
     nginx:
         build:
