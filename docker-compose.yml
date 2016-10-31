@@ -1,0 +1,47 @@
+version: '2'
+services:
+    app:
+        build:
+            context: .test_todo/application
+            args:
+                - PATH_TO_PROJECT=/var/www.test_todo.app
+        container_name: testtodo.app
+        volumes:
+          - ./application:/var/www.test_todo.app
+        tty: true
+    nginx:
+        build:
+            context: .test_todo/nginx
+        container_name: testtodo_nginx
+        volumes_from:
+            - app
+        volumes:
+            - ./logs/nginx/:/var/log/nginx
+        ports:
+            - "80:80"
+            - "443:443"
+        links:
+            - php-fpm
+    php-fpm:
+        build:
+            context: .test_todo/php_fpm
+        container_name: testtodo_php-fpm
+        volumes_from:
+            - app
+        expose:
+            - "9000"
+        links:
+            - app
+    mariadb:
+        build:
+            context: .test_todo/mariadb
+        container_name: testtodo_mariadb
+        volumes_from:
+            - app
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_DATABASE: sawfly
+            MYSQL_USER: sawfly
+            MYSQL_PASSWORD: secret
+            MYSQL_ROOT_PASSWORD: root
