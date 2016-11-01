@@ -15,3 +15,6 @@ Route::get('/', function () {
     \App\Task::create(['name' => 'task1']);
     return view('welcome');
 });
+
+Route::resource('categories', 'CategoriesController');
+Route::resource('tasks', 'TasksController');

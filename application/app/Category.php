@@ -20,4 +20,20 @@ class Category extends Model
     {
         return $this->hasMany('App\Task');
     }
+
+    /**
+     * @param $data
+     * @return $this|static
+     */
+    public function add($data)
+    {
+        $fields = [];
+        foreach ($data as $key => $value) {
+            if (in_array($key, $this->fillable))
+                $fields[$key] = $value;
+        }
+        if (!empty($fields))
+            return self::create($fields);
+        else return $this;
+    }
 }
