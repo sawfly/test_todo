@@ -2,6 +2,7 @@
 
 namespace App;
 
+use DB;
 use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
@@ -35,5 +36,15 @@ class Category extends Model
         if (!empty($fields))
             return self::create($fields);
         else return $this;
+    }
+
+    /**
+     * collection with counted related tasks
+     * @return mixed
+     */
+    public static function withTasks(){
+        return DB::table('categories')->leftJoin(DB::raw('(SELECT category_id, count(category_id) as tasks FROM tasks 
+        WHERE deleted_at is null GROUP BY category_id) AS c'), 'categories.id', '=', 'category_id')->get(['id', 'name',
+            'tasks']);
     }
 }

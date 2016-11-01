@@ -2,6 +2,7 @@
 
 namespace App;
 
+use DB;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -48,7 +49,6 @@ class Task extends Model
     {
         $updated = [];
         if (array_key_exists('category_id', $data) && $this->getAttribute('category_id') != $data['category_id']) {
-//            $this->addCategory($data['category_id']);
             $this->setAttribute('category_id', $data['category_id']);
             array_push($updated, 'category_id');
         }
@@ -65,5 +65,16 @@ class Task extends Model
         if ($updated != [])
             return $this->save() ? $updated : [];
         else return [];
+    }
+
+    /**
+     * add name of category
+     * @return mixed
+     */
+    public static function allWithCategoryName()
+    {
+        return DB::table('tasks')->leftJoin('categories', 'categories.id', '=', 'tasks.category_id')
+            ->where('tasks.deleted_at')
+            ->get(['tasks.id', 'tasks.name', 'categories.name as category', 'tasks.status_id']);
     }
 }

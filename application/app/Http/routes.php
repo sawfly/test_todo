@@ -11,10 +11,6 @@
 |
 */
 
-Route::get('/', function () {
-    \App\Task::create(['name' => 'task1']);
-    return view('welcome');
-});
-
+Route::get('/', 'MainController@indexAction');
 Route::resource('categories', 'CategoriesController');
 Route::resource('tasks', 'TasksController');
