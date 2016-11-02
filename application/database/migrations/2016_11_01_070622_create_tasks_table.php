@@ -20,8 +20,6 @@ class CreateTasksTable extends Migration
                 $table->tinyInteger('status_id')->default(0);
                 $table->timestamps();
                 $table->softDeletes();
-                $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade')
-                    ->onUpdate('cascade');
             });
         }
     }

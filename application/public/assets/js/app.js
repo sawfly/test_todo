@@ -18,6 +18,7 @@ var totalTasks = function () {
 };
 
 totalTasks();
+
 var getCsrf = function () {
     return $('form input[type=hidden]')[0].defaultValue;
 };
@@ -28,7 +29,7 @@ var changeTaskStatus = function () {
     data._token = getCsrf();
     if (task.children('input')[0].checked === true)
         data.status_id = 2;
-    //else data.status_id = 0;
+    else data.status_id = 0;
     $.ajax({
         method: 'PUT',
         url: "/tasks/" + id,
@@ -51,7 +52,10 @@ var changeTaskStatus = function () {
     });
 };
 
-$("input[type=checkbox]").on("change", changeTaskStatus);
+var bindChangeStatus = function () {
+    $("input[type=checkbox]").on("change", changeTaskStatus);
+};
+bindChangeStatus();
 
 $('#categoryCreate').click(function () {
     var pattern = /^[a-zA-Z0-9-_ ]{3,256}$/;
@@ -112,89 +116,100 @@ $('#taskCreate').click(function () {
         contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
         data: dataSend
     }).success(function (data) {
-        task = '<li class="{{$task->category}}" id="task"' + data.task.id + '>' +
+        task = '<li class="'+category+'" id="task' + data.task.id + '">' +
             '<input type="checkbox" value="">' +
             '<span class="text">' + data.task.name + '</span>' +
             '<span class="label label-success">' + category + '</span>' +
             '<div class="tools">' +
-            '<i class="glyphicon glyphicon glyphicon-pencil"></i>' +
+            '<i class="glyphicon glyphicon glyphicon-pencil" data-toggle="modal" data-target="#edit_task_modal"></i>' +
             '<i class="glyphicon glyphicon-remove-circle"></i>' +
             '</div>' +
             '</li>';
-        $(task).insertAfter($('ul.tasks li').last());
+        $('ul.tasks').append(task);
         if (dataSend.category_id) {
             var badge = $('a#category' + dataSend.category_id + ' span');
             badge[0].innerText = parseInt(badge[0].innerText) + 1;
             totalTasks();
         }
+        bindEdit();
+        bindDelete();
+        bindChangeStatus();
     });
 });
 
-$('li .glyphicon-remove-circle').click(function () {
-    var toDelete = $(this).parent().parent();
-    var id = toDelete[0].id.replace('task', '');
-    var data = {};
-    data._token = getCsrf();
-    $.ajax({
-        method: 'DELETE',
-        url: "/tasks/" + id,
-        contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-        data: data
-    }).success(function (data) {
-        if (data.status == 'deleted')
-            toDelete.detach();
-        if (toDelete[0].className != '') {
-            var badge = $('div.categories .' + toDelete[0].className + ' span');
-            badge[0].innerText = parseInt(badge[0].innerText) - 1;
-        }
-        totalTasks();
+var bindDelete = function () {
+    $('li .glyphicon-remove-circle').click(function () {
+        var toDelete = $(this).parent().parent();
+        var id = toDelete[0].id.replace('task', '');
+        var data = {};
+        data._token = getCsrf();
+        $.ajax({
+            method: 'DELETE',
+            url: "/tasks/" + id,
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            data: data
+        }).success(function (data) {
+            if (data.status == 'deleted')
+                toDelete.detach();
+            if (toDelete[0].className != '') {
+                var badge = $('div.categories .' + toDelete[0].className + ' span');
+                badge[0].innerText = parseInt(badge[0].innerText) - 1;
+            }
+            totalTasks();
+        });
     });
-});
+};
 
-$('i.glyphicon-pencil').click(function () {
-    var edit = $(this).parent().parent();
-    taskId = edit[0].id.replace('task', '');
-    var form = $('#edit_task_modal form');
-    var taskName = $('#newTaskName');
-    taskName[0].placeholder = edit.children('.text')[0].innerText;
-    taskBefore.name = taskName[0].placeholder;
-    var options = '<option>None</option>';
-    var cats = $('.categories a');
-    for (var a = 1; a < cats.length; a++) {
-        options += '<option value="' + cats[a].id.replace('category', '') + '">' + cats[a].name + '</option>';
-    }
-    $('select.allCategories').children().detach();
-    $(options).appendTo($('select.allCategories'));
+bindDelete();
 
-    for (var b = 1; b < $('select.allCategories option').length; b++) {
-        if ($('select.allCategories option')[b].innerText == edit.children('span.label')[0].innerText) {
-            $('select.allCategories option')[b].selected = true;
-            taskBefore.category = edit.children('span.label')[0].innerText;
-            taskBefore.category_id = $('select.allCategories option')[b].value;
-            break;
+var bindEdit = function () {
+    $('i.glyphicon-pencil').click(function () {
+        var edit = $(this).parent().parent();
+        taskId = edit[0].id.replace('task', '');
+        var form = $('#edit_task_modal form');
+        var taskName = $('#newTaskName');
+        taskName[0].placeholder = edit.children('.text')[0].innerText;
+        taskBefore.name = taskName[0].placeholder;
+        var options = '<option>None</option>';
+        var cats = $('.categories a');
+        for (var a = 1; a < cats.length; a++) {
+            options += '<option value="' + cats[a].id.replace('category', '') + '">' + cats[a].name + '</option>';
         }
-    }
-    var status = $('select.status');
-    if (edit.children('span').hasClass('label-success')) {
-        if (edit.children('input').attr('checked') == 'checked') {
-            status[0][2].selected = true;
-            status_id = 2;
-        } else {
-            status[0][0].selected = true;
-            status_id = 0;
+        $('select.allCategories').children().detach();
+        $(options).appendTo($('select.allCategories'));
+
+        for (var b = 1; b < $('select.allCategories option').length; b++) {
+            if ($('select.allCategories option')[b].innerText == edit.children('span.label')[0].innerText) {
+                $('select.allCategories option')[b].selected = true;
+                taskBefore.category = edit.children('span.label')[0].innerText;
+                taskBefore.category_id = $('select.allCategories option')[b].value;
+                break;
+            }
         }
-    }
-    if (edit.children('span').hasClass('label-danger')) {
-        if (edit.children('input').attr('checked') == 'checked') {
-            status[0][2].selected = true;
-            status_id = 2;
-        } else {
-            status[0][1].selected = true;
-            status_id = 1;
+        var status = $('select.status');
+        if (edit.children('span').hasClass('label-success')) {
+            if (edit.children('input').attr('checked') == 'checked') {
+                status[0][2].selected = true;
+                status_id = 2;
+            } else {
+                status[0][0].selected = true;
+                status_id = 0;
+            }
         }
-    }
-    taskBefore.status_id = status_id;
-});
+        if (edit.children('span').hasClass('label-danger')) {
+            if (edit.children('input').attr('checked') == 'checked') {
+                status[0][2].selected = true;
+                status_id = 2;
+            } else {
+                status[0][1].selected = true;
+                status_id = 1;
+            }
+        }
+        taskBefore.status_id = status_id;
+    });
+};
+
+bindEdit();
 
 $('#taskEdit').click(function () {
     var pattern = /^[a-zA-Z0-9-_ ]{3,256}$/;
@@ -203,7 +218,8 @@ $('#taskEdit').click(function () {
     if (pattern.test(taskName[0].value))
         editData.name = taskName[0].value;
     editData.status_id = $('select.status :selected')[0].value;
-    editData.category_id = $('select.allCategories :selected')[0].value;
+    if($('select.allCategories :selected')[0].value != 'None')
+        editData.category_id = $('select.allCategories :selected')[0].value;
     editData._token = getCsrf();
     var task = $('#task' + taskId);
     $.ajax({
@@ -212,7 +228,6 @@ $('#taskEdit').click(function () {
         contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
         data: editData
     }).success(function (data) {
-        console.log(data);
         if (data.status == 'updated') {
             if (data.task.status_id == 0) {
                 task.removeClass('done');
