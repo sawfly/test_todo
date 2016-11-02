@@ -18,11 +18,14 @@ var totalTasks = function () {
 };
 
 totalTasks();
-
+var getCsrf = function () {
+    return $('form input[type=hidden]')[0].defaultValue;
+};
 var changeTaskStatus = function () {
     var task = $(this).parent();
     var id = task[0].id.replace('task', '');
     var data = {};
+    data._token = getCsrf();
     if (task.children('input')[0].checked === true)
         data.status_id = 2;
     //else data.status_id = 0;
@@ -59,6 +62,7 @@ $('#categoryCreate').click(function () {
     }
     else catName.removeClass('invalid');
     var data = {name: catName[0].value};
+    data._token = getCsrf();
     $.ajax({
         method: 'POST',
         url: "/categories",
@@ -101,6 +105,7 @@ $('#taskCreate').click(function () {
     var category = '';
     if ($("select :selected")[0].label != 'None')
         category = $("select :selected")[0].label;
+    dataSend._token = getCsrf();
     $.ajax({
         method: 'POST',
         url: "/tasks",
@@ -128,10 +133,13 @@ $('#taskCreate').click(function () {
 $('li .glyphicon-remove-circle').click(function () {
     var toDelete = $(this).parent().parent();
     var id = toDelete[0].id.replace('task', '');
+    var data = {};
+    data._token = getCsrf();
     $.ajax({
         method: 'DELETE',
         url: "/tasks/" + id,
-        contentType: 'application/x-www-form-urlencoded; charset=UTF-8'
+        contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+        data: data
     }).success(function (data) {
         if (data.status == 'deleted')
             toDelete.detach();
@@ -196,6 +204,7 @@ $('#taskEdit').click(function () {
         editData.name = taskName[0].value;
     editData.status_id = $('select.status :selected')[0].value;
     editData.category_id = $('select.allCategories :selected')[0].value;
+    editData._token = getCsrf();
     var task = $('#task' + taskId);
     $.ajax({
         method: 'PUT',
@@ -203,6 +212,7 @@ $('#taskEdit').click(function () {
         contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
         data: editData
     }).success(function (data) {
+        console.log(data);
         if (data.status == 'updated') {
             if (data.task.status_id == 0) {
                 task.removeClass('done');
