@@ -14,7 +14,7 @@ class Task extends Model
 
     protected $dates = ['deleted_at'];
 
-    private $statuses = [0, 1];
+    private $statuses = [0, 1, 2];
 
     /**
      * One-to-many relation

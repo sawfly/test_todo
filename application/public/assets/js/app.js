@@ -1,4 +1,6 @@
 var currentCategory = {id: "categories", name: ""};
+var taskId;
+var taskBefore = {};
 $('.categories a').click(function () {
     $('.categories .active').removeClass('active');
     $(this).addClass('active');
@@ -10,25 +12,20 @@ $('.categories a').click(function () {
     var curName = $(this)[0].name;
     currentCategory = {name: curName, id: curId};
 });
-var cats = $('.categories a span');
-function countCats(cats) {
-    var total = 0;
-    for (var a = 1; a < cats.length; a++) {
-        var t = cats[a].innerText;
-        if (t != '')
-            total += parseInt(t);
-    }
-    return total;
-}
-cats[0].innerText = countCats(cats);
+
+var totalTasks = function () {
+    $('.categories a span')[0].innerText = $('ul.tasks li span.text').length;
+};
+
+totalTasks();
 
 var changeTaskStatus = function () {
     var task = $(this).parent();
-    var id = task[0].id;
+    var id = task[0].id.replace('task', '');
     var data = {};
     if (task.children('input')[0].checked === true)
-        data.status_id = 1;
-    else data.status_id = 0;
+        data.status_id = 2;
+    //else data.status_id = 0;
     $.ajax({
         method: 'PUT',
         url: "/tasks/" + id,
@@ -121,10 +118,9 @@ $('#taskCreate').click(function () {
             '</li>';
         $(task).insertAfter($('ul.tasks li').last());
         if (dataSend.category_id) {
-            var badge = $('a#category'+dataSend.category_id+' span');
-            badge[0].innerText = parseInt(badge[0].innerText)+1;
-            var badges = $('a#categories span');
-            badges[0].innerText = parseInt(badges[0].innerText)+1;
+            var badge = $('a#category' + dataSend.category_id + ' span');
+            badge[0].innerText = parseInt(badge[0].innerText) + 1;
+            totalTasks();
         }
     });
 });
@@ -132,15 +128,107 @@ $('#taskCreate').click(function () {
 $('li .glyphicon-remove-circle').click(function () {
     var toDelete = $(this).parent().parent();
     var id = toDelete[0].id.replace('task', '');
-    console.log();
-
     $.ajax({
         method: 'DELETE',
         url: "/tasks/" + id,
-        contentType: 'application/x-www-form-urlencoded; charset=UTF-8'//,
-        // data: data
+        contentType: 'application/x-www-form-urlencoded; charset=UTF-8'
     }).success(function (data) {
         if (data.status == 'deleted')
             toDelete.detach();
+        if (toDelete[0].className != '') {
+            var badge = $('div.categories .' + toDelete[0].className + ' span');
+            badge[0].innerText = parseInt(badge[0].innerText) - 1;
+        }
+        totalTasks();
     });
+});
+
+$('i.glyphicon-pencil').click(function () {
+    var edit = $(this).parent().parent();
+    taskId = edit[0].id.replace('task', '');
+    var form = $('#edit_task_modal form');
+    var taskName = $('#newTaskName');
+    taskName[0].placeholder = edit.children('.text')[0].innerText;
+    taskBefore.name = taskName[0].placeholder;
+    var options = '<option>None</option>';
+    var cats = $('.categories a');
+    for (var a = 1; a < cats.length; a++) {
+        options += '<option value="' + cats[a].id.replace('category', '') + '">' + cats[a].name + '</option>';
+    }
+    $('select.allCategories').children().detach();
+    $(options).appendTo($('select.allCategories'));
+
+    for (var b = 1; b < $('select.allCategories option').length; b++) {
+        if ($('select.allCategories option')[b].innerText == edit.children('span.label')[0].innerText) {
+            $('select.allCategories option')[b].selected = true;
+            taskBefore.category = edit.children('span.label')[0].innerText;
+            taskBefore.category_id = $('select.allCategories option')[b].value;
+            break;
+        }
+    }
+    var status = $('select.status');
+    if (edit.children('span').hasClass('label-success')) {
+        if (edit.children('input').attr('checked') == 'checked') {
+            status[0][2].selected = true;
+            status_id = 2;
+        } else {
+            status[0][0].selected = true;
+            status_id = 0;
+        }
+    }
+    if (edit.children('span').hasClass('label-danger')) {
+        if (edit.children('input').attr('checked') == 'checked') {
+            status[0][2].selected = true;
+            status_id = 2;
+        } else {
+            status[0][1].selected = true;
+            status_id = 1;
+        }
+    }
+    taskBefore.status_id = status_id;
+});
+
+$('#taskEdit').click(function () {
+    var pattern = /^[a-zA-Z0-9-_ ]{3,256}$/;
+    var editData = {};
+    var taskName = $('#newTaskName');
+    if (pattern.test(taskName[0].value))
+        editData.name = taskName[0].value;
+    editData.status_id = $('select.status :selected')[0].value;
+    editData.category_id = $('select.allCategories :selected')[0].value;
+    var task = $('#task' + taskId);
+    $.ajax({
+        method: 'PUT',
+        url: "/tasks/" + taskId,
+        contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+        data: editData
+    }).success(function (data) {
+        if (data.status == 'updated') {
+            if (data.task.status_id == 0) {
+                task.removeClass('done');
+                task.children('span.label').removeClass('label-danger').addClass('label-success');
+                task.children('input')[0].checked = false;
+            }
+            if (data.task.status_id == 1) {
+                task.removeClass('done');
+                task.children('span.label').removeClass('label-success').addClass('label-danger');
+                task.children('input')[0].checked = false;
+            }
+            if (data.task.status_id == 2) {
+                task.addClass('done');
+                task.children('input')[0].checked = true;
+            }
+            if (data.task.name != taskBefore.name) {
+                task.children('span.text')[0].innerText = data.task.name;
+            }
+            task.children('span.label')[0].innerText = taskBefore.category;
+            if (data.task.category_id != taskBefore.category_id) {
+                var oldCat = $('#category' + taskBefore.category_id);
+                var newCat = $('#category' + data.task.category_id);
+                oldCat.children('span')[0].innerText = parseInt(oldCat.children('span')[0].innerText) - 1;
+                newCat.children('span')[0].innerText = parseInt(newCat.children('span')[0].innerText) + 1;
+                task.children('span.label')[0].innerText = newCat[0].name;
+            }
+        }
+    })
 });

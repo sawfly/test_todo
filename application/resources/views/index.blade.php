@@ -35,12 +35,13 @@
                     </button>
                 </div>
                 <div class="panel-body list-group">
-                    <a href="#" class="list-group-item active" id="categories">
+                    <a href="#" class="list-group-item active category" id="categories">
                         <span class="badge">0</span>
                         All
                     </a>
                     @foreach ($categories as $category)
-                        <a href="#" class="list-group-item" id="category{{$category->id}}" name="{{$category->name}}">
+                        <a href="#" class="list-group-item {{$category->name}}" id="category{{$category->id}}"
+                           name="{{$category->name}}">
                             <span class="badge">
                                 @if($category->tasks != '')
                                     {{$category->tasks}}
@@ -66,20 +67,40 @@
                 <div class="panel-body">
                     <ul class="todo-list ui-sortable tasks">
                         @foreach ($tasks as $task)
-                            @if($task->status_id == 1)
+                            @if($task->status_id == 2)
                                 <li class="done {{$task->category}}" id="task{{$task->id}}">
                                     <input type="checkbox" checked="checked" value="">
-                            @else
-                                <li class="{{$task->category}}" id="task{{$task->id}}">
-                                    <input type="checkbox" value="">
-                            @endif
                                     <span class="text">{{$task->name}}</span>
                                     <span class="label label-success">{{$task->category}}</span>
                                     <div class="tools">
-                                        <i class="glyphicon glyphicon glyphicon-pencil"></i>
+                                        <i class="glyphicon glyphicon glyphicon-pencil" data-toggle="modal"
+                                           data-target="#edit_task_modal"></i>
                                         <i class="glyphicon glyphicon-remove-circle"></i>
                                     </div>
                                 </li>
+                            @elseif($task->status_id == 1)
+                                <li class="{{$task->category}}" id="task{{$task->id}}">
+                                    <input type="checkbox" value="">
+                                    <span class="text">{{$task->name}}</span>
+                                    <span class="label label-danger">{{$task->category}}</span>
+                                    <div class="tools">
+                                        <i class="glyphicon glyphicon glyphicon-pencil" data-toggle="modal"
+                                           data-target="#edit_task_modal"></i>
+                                        <i class="glyphicon glyphicon-remove-circle"></i>
+                                    </div>
+                                </li>
+                            @else
+                                <li class="{{$task->category}}" id="task{{$task->id}}">
+                                    <input type="checkbox" value="">
+                                    <span class="text">{{$task->name}}</span>
+                                    <span class="label label-success">{{$task->category}}</span>
+                                    <div class="tools">
+                                        <i class="glyphicon glyphicon glyphicon-pencil" data-toggle="modal"
+                                           data-target="#edit_task_modal"></i>
+                                        <i class="glyphicon glyphicon-remove-circle"></i>
+                                    </div>
+                                </li>
+                            @endif
                         @endforeach
                     </ul>
                 </div>
@@ -158,6 +179,51 @@
     </div>
 </div>
 <!-- TASK MODAL END -->
+
+<!-- TASK EDIT START -->
+<div id="edit_task_modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">Edit Task</h4>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" class="form-control" placeholder="Task" id="newTaskName">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select class="form-control allCategories">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select class="form-control status">
+                            <option value=0>Opened</option>
+                            <option value=1>Active</option>
+                            <option value=2>Closed</option>
+                        </select>
+                    </div>
+                    {{ csrf_field() }}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                    Close
+                </button>
+                <button type="button" class="btn btn-primary" id="taskEdit">
+                    Save changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- TASK EDIT END -->
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
